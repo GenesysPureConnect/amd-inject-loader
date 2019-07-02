@@ -1,28 +1,58 @@
+var path = require('path');
+var fs = require('fs');
+
 require( "should" );
 var sinon = require( "sinon" );
-var er = require( "enhanced-require" )( module );
+var memfs = require('memfs');
+var monkey = require('fs-monkey');
+
+var context;
+
+var loader;
+
+function er(fileName) {
+    var basename = path.basename(fileName);
+    var contents = fs.readFileSync(fileName, 'utf8');
+    var resp = loader(contents);
+
+    var memoryfs = memfs.fs;
+    monkey.patchRequire(memoryfs);
+    memoryfs.writeFileSync('/'+ basename, resp);
+
+    var localInclude = fs.readFileSync('./spec/examples/localInclude.js', 'utf8');
+    memoryfs.writeFileSync('/localInclude.js', localInclude);
+
+    return require('/'+ basename);
+}
 
 describe( "amd-inject-loader", function() {
-	it( "should throw an error when used with incompatible formats", function() {
+    beforeEach(function() {
+        context = {
+            cacheable: function() { }
+        }
+        loader = require('../index').bind(context);
+    });
+
+    it( "should throw an error when used with incompatible formats", function() {
 		( function() {
-			er( "../index.js!./examples/invalid-commonjs" );
+			er( "./spec/examples/invalid-commonjs.js" );
 		} ).should.throw( /files with dependencies/ );
 
 		( function() {
-			er( "../index.js!./examples/invalid-amd" );
+			er( "./spec/examples/invalid-amd.js" );
 		} ).should.throw( /files with dependencies/ );
 
 		( function() {
-			er( "../index.js!./examples/validNoArgs" );
+			er( "./spec/examples/validNoArgs.js" );
 		} ).should.not.throw();
 
 		( function() {
-			er( "../index.js!./examples/almost-valid-amd" );
+			er( "./spec/examples/almost-valid-amd.js" );
 		} ).should.throw( /JSON parsing failed/ );
 	} );
 
-	it( "should transform the file correctly", function() {
-		var factory = er( "../index.js!./examples/simple" );
+    it( "should transform the file correctly", function() {
+        var factory = er( "./spec/examples/simple.js" );
 		var resp = factory.toString();
 
 		resp.should.match( /var _ =/ );
@@ -35,10 +65,10 @@ describe( "amd-inject-loader", function() {
 
 		stub.calledOnce.should.be.ok;
 		stub.calledWith( [ 1, 2, 3 ] ).should.be.ok;
-	} );
-
-	it( "should transform the file correctly when the module is named", function() {
-		var factory = er( "../index.js!./examples/simpleNamed" );
+    });
+    
+    it( "should transform the file correctly when the module is named", function() {
+        var factory = er( "./spec/examples/simpleNamed.js" );
 		var resp = factory.toString();
 
 		resp.should.match( /var _ =/ );
@@ -51,10 +81,10 @@ describe( "amd-inject-loader", function() {
 
 		stub.calledOnce.should.be.ok;
 		stub.calledWith( [ 1, 2, 3 ] ).should.be.ok;
-	} );
-
-	it( "should tranform the file correctly even when define is multiline", function() {
-		var factory = er( "../index.js!./examples/multiline" );
+    } );
+    
+    it( "should tranform the file correctly even when define is multiline", function() {
+		var factory = er( "./spec/examples/multiline.js" );
 		var resp = factory.toString();
 
 		resp.should.match( /var _ =/ );
@@ -67,15 +97,15 @@ describe( "amd-inject-loader", function() {
 
 		stub.calledOnce.should.be.ok;
 		stub.calledWith( [ 1, 2, 3 ] ).should.be.ok;
-	} );
+    } );
 
-	it( "should tranform the file correctly even when define has comments", function() {
-		var localEr = require( "enhanced-require" )( module, {
-			amdInjectLoader: {
+    it( "should tranform the file correctly even when define has comments", function() {
+        context.query = {
+            amdInjectLoader: {
 				stripComments: true
 			}
-		} );
-		var factory = localEr( "../index.js!./examples/multilineWithComments" );
+        }
+        var factory = er( "./spec/examples/multilineWithComments.js" );
 		var resp = factory.toString();
 
 		resp.should.match( /var _ =/ );
@@ -90,18 +120,18 @@ describe( "amd-inject-loader", function() {
 
 		stub.calledOnce.should.be.ok;
 		stub.calledWith( [ 1, 2, 3 ] ).should.be.ok;
-	} );
-
-	it( "should allow the factory method to be called without any arguments", function() {
-		var factory = er( "../index.js!./examples/withInclude" );
-		var resp = factory.toString();
+    } );
+    
+    it( "should allow the factory method to be called without any arguments", function() {
+        var factory = er( "./spec/examples/withInclude.js" );
+        var resp = factory.toString();
 
 		resp.should.match( /var include =/ );
 		factory.should.not.throw();
-	} );
-
-	it( "should support more dependencies than arguments", function() {
-		var factory = er( "../index.js!./examples/moreDeps" );
+    } );
+    
+    it( "should support more dependencies than arguments", function() {
+		var factory = er( "./spec/examples/moreDeps.js" );
 		var resp = factory.toString();
 
 		resp.should.match( /var _ =/ );
@@ -111,15 +141,15 @@ describe( "amd-inject-loader", function() {
 			lodash: { each: sinon.stub() },
 			unreferenced: { somethingElse: true }
 		} ).should.not.throw();
-	} );
-
-	it( "should add istanbul ignore comments before each line when turned on", function() {
-		var localEr = require( "enhanced-require" )( module, {
-			amdInjectLoader: {
+    } );
+    
+    it( "should add istanbul ignore comments before each line when turned on", function() {
+        context.query = {
+            amdInjectLoader: {
 				istanbul: true
 			}
-		} );
-		var factory = localEr( "../index.js!./examples/istanbul" );
+        }
+		var factory = er( "./spec/examples/istanbul.js" );
 		var resp = factory.toString();
 
 		var lines = resp.split( /\n/ );
@@ -127,10 +157,10 @@ describe( "amd-inject-loader", function() {
 		lines[ 2 ].should.startWith( "\tvar _ =" );
 		lines[ 3 ].should.equal( "\t/* istanbul ignore next - the following line of code is used for dependency injection */" );
 		lines[ 4 ].should.startWith( "\tvar React =" );
-	} );
-
-	it( "should support transformation of istanbul instrumented code", function() {
-		var factory = er( "../index.js!./examples/instrumented" );
+    } );
+    
+    it( "should support transformation of istanbul instrumented code", function() {
+		var factory = er( "./spec/examples/instrumented.js" );
 
 		var stub = sinon.stub();
 
@@ -141,6 +171,4 @@ describe( "amd-inject-loader", function() {
 		stub.calledOnce.should.be.ok;
 		stub.calledWith( [ 1, 2, 3 ] ).should.be.ok;
 	} );
-
-
-} );
+});

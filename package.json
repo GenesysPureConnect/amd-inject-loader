@@ -1,48 +1,37 @@
 {
-  "name": "amd-inject-loader",
-  "version": "0.5.0",
+  "name": "@pureconnect/amd-inject-loader",
+  "version": "1.0.0",
   "description": "A simple webpack inject loader for AMD-style code",
   "main": "index.js",
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
   "scripts": {
-    "test": "mocha spec/spec.js",
-    "coverage": "istanbul cover -x \"spec/**\" _mocha -- spec/spec.js",
-    "show-coverage": "open coverage/lcov-report/index.html",
-    "test-ci": "mocha -w spec/spec.js"
+    "test": "mocha spec/spec.js"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:LeanKit-Labs/amd-inject-loader.git"
+    "url": "git@github.com:GenesysPureConnect/amd-inject-loader.git"
   },
   "keywords": [
     "webpack",
     "loader"
   ],
-  "author": "Doug Neiner <doug@dougneiner.com>",
-  "contributors": [
-    {
-      "name": "Doug Neiner",
-      "email": "doug@dougneiner.com",
-      "url": "http://code.dougneiner.com"
-    },
-    {
-      "name": "Ryan Niemeyer",
-      "email": "ryan@knockmeout.net",
-      "url": "http://knockmeout.net"
-    }
-  ],
+  "author": "DevFoundry@genesys.com",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/LeanKit-Labs/amd-inject-loader/issues"
+  "homepage": "https://github.com/GenesysPureConnect/amd-inject-loader",
+  "peerDependencies": {
+    "webpack": "^4.0.0"
   },
-  "homepage": "https://github.com/LeanKit-Labs/amd-inject-loader",
+  "dependencies": {
+    "loader-utils": "^1.2.3"
+  },
   "devDependencies": {
-    "enhanced-require": "^0.4.2",
-    "istanbul": "^0.3.5",
-    "mocha": "^2.1.0",
-    "should": "^4.6.1",
-    "sinon": "^1.12.2"
+    "fs-monkey": "^0.3.3",
+    "memfs": "^2.15.2",
+    "mocha": "^6.1.4",
+    "should": "^13.2.3",
+    "sinon": "^7.3.2",
+    "webpack": "^4.32.2"
   }
 }

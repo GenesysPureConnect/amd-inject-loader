@@ -1,9 +1,11 @@
+var loaderUtils = require('loader-utils');
+
 module.exports = function( input ) {
 	var finalDependencies;
 
 	this.cacheable();
-
-	var options = this.options.amdInjectLoader || {};
+	var baseOptions = loaderUtils.getOptions(this) || {};
+	var options = baseOptions.amdInjectLoader || {};
 	var istanbul = options.istanbul === true;
 	var stripComments = options.stripComments === true;
 
